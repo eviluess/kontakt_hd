@@ -1299,7 +1299,7 @@ goto :eof
 REM exit pack clean_temp
 :exit
 
-start http://eviluess.droppages.com/Applications/PC/Kontakt+HD+Edition
+start https://github.com/eviluess/kontakt_hd/wiki/Native-Instruments-Kontakt-with-SymphonicChoirs-HD-Edition-for-Windows
 
 call :nok4u
 
