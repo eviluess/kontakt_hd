@@ -960,7 +960,7 @@ start "reg2.x" "%tools%\Registration Tool.exe"
 call :exit true false
 
 :readme
-start http://eviluess.droppages.com/Applications/PC/Kontakt+HD+Edition
+start https://github.com/eviluess/kontakt_hd/wiki/Native-Instruments-Kontakt-with-SymphonicChoirs-HD-Edition-for-Windows
 start explorer "%tools%\."
 start notepad "%tools%\readme.txt"
 call :exit false false
