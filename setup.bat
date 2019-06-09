@@ -7,7 +7,22 @@ REM C_DRV=FAT32
 REM I_DRV=FAT32
 
 
+net session > nul 2>&1
+if %errorLevel% == 0 (
+goto START_POINT
+)
+%SYSTEMROOT%\system32\net session > nul 2>&1
+if %errorLevel% == 0 (
+goto START_POINT
+) else (
+call :exit false false
+)
+
+
+:START_POINT
+
 reg add "hklm\SOFTWARE\Native Instruments\Kontakt HD Edition" /v k4u /t REG_SZ /d "EVILUESS@QQ.COM" /f
+reg add "hkcu\Software\Sysinternals\Junction" /v EulaAccepted /t REG_DWORD /d 1 /f
 
 set skip=skip=2
 
@@ -71,6 +86,7 @@ if "x86"=="%PROCESSOR_ARCHITECTURE%" goto cfgx86
 set sys32=%windir%\SysWOW64
 set lms=hklm\SOFTWARE\Wow6432Node
 set commonx86=%CommonProgramFiles(x86)%
+set progx86=%ProgramFiles(x86)%
 
 goto linkuserdata
 
@@ -79,6 +95,7 @@ goto linkuserdata
 set sys32=%windir%\system32
 set lms=hklm\SOFTWARE
 set commonx86=%CommonProgramFiles%
+set progx86=%ProgramFiles%
 
 :linkuserdata
 
@@ -102,11 +119,16 @@ rd /q /s "%USERPROFILE%\Documents\Native Instruments"
 %jd% "%USERPROFILE%\Documents\Native Instruments" "%iroot%\User"
 
 %jd% -d "%iroot%\User\Kontakt 4" 
+%jd% -d "%iroot%\User\Kontakt" 
 xcopy /s /h /r /y /i "%iroot%\User\Kontakt 4" "%iroot%\User\Kontakt 5"
+xcopy /s /h /r /y /i "%iroot%\User\Kontakt" "%iroot%\User\Kontakt 5"
 rd /q /s "%iroot%\User\Kontakt 4"
+rd /q /s "%iroot%\User\Kontakt"
 md "%iroot%\User\Kontakt 5"
 %jd% "%iroot%\User\Kontakt 4" "%iroot%\User\Kontakt 5"
+%jd% "%iroot%\User\Kontakt" "%iroot%\User\Kontakt 5"
 
+rd /q /s "%iroot%\User\Kontakt\Crashlogs"
 rd /q /s "%iroot%\User\Kontakt 5\Crashlogs"
 rd /q /s "%iroot%\User\Kontakt 4\Crashlogs"
 rd /q /s "%iroot%\User\Kontakt 3\Crashlogs"
@@ -135,70 +157,77 @@ rem set CommonProgramFiles=E:\Temp\common3264
 
 cls
 
-echo 1. English
-echo 2. 简体中文 (Chinese Simplified)
+echo 1. English: Key In 1 and hit the enter key will use English during the installation.
+echo 2. 简体中文: 输入2并按回车将在安装过程中使用简体中文
 echo.
 
 set /p choi=[1~2]:
 
 if %choi% == 1 goto English
 
-set str_nontfs=Native Instrument Kontakt 家族 2016 准速装程序（真速装要求Common文件夹所在分区为NTFS）
-set str_install_title=Native Instrument Kontakt 家族 HD 2016 版速装程序
-set str_install=安装
-set str_uninstall=卸载
-set str_readme=打开帮助文件和工具目录
-set str_reglib=运行Kontakt音色库注册工具
-set str_choose=请选择1~
-set str_keepdfd=是否保留DFD等支持以便Kontakt2 Player等程序可以正常运行？
-set str_selvstpath=请选择VST路径
-set str_manualpath=手动输入
-set str_sysvstpath=系统默认
-set str_autosearch=自动搜索
-set str_by_cakewalk=由Cakewalk提供
-set str_vstpath_notfound=无法找到VST路径
+set str_nontfs=Native Instrument Kontakt 家族 2019/6/9 准速装程序（真速装要求Common文件夹所在分区为NTFS）
+set str_install_title=Native Instrument Kontakt 家族 HD 2019/6/9 版速装程序
+set str_install=把Kontakt家族安装到计算机
+set str_uninstall=卸载Kontakt家族
+set str_readme=阅读帮助文件和浏览工具目录，当遇到不清楚时请使用本入口
+set str_reglib=运行Kontakt音色库注册工具，当你遇到任何未注册引起的问题时使用本功能
+set str_choose=请输入1~
+set str_enter=并按回车继续
+set str_keepdfd=是否保留DFD等支持以便Kontakt2 Player等程序可以正常运行（如果您不再使用其他Kontakt2相关产品如Kompakt或Intakt之类的则建议选否）？
+set str_selvstpath=选择32位VST路径，Kontakt的32位版本和SymphonicChoirs将安装于此
+set str_selvst64path=请选择64位VST路径，Kontakt的64位版本将安装于此
+set str_manualpath=手动输入，当自动搜寻的结果中不满意，可选择该项
+set str_sysvstpath=结果来自系统默认
+set str_autosearch=结果来自自动搜索
+set str_by_cakewalk=该路径由Cakewalk提供
+set str_vstpath_notfound=无法找到32位VST路径
 set str_vstpath_notfound64=无法找到64位VST路径
-set str_please_input=请输入或从剪切板黏贴期望的VST路径，建议直接拖拽目标文件夹到本窗口：
-set str_update_syspath=是否更新到系统VST目录？
+set str_please_input=请输入或从剪切板黏贴期望的VST路径，建议直接拖拽目标文件夹到本窗口，然后按回车。当路径包含空格时，路径两端应该有双引号才是正确的输入：
+set str_update_syspath=是否更新到系统VST目录（更新后，其他VST插件安装程序可以自动定位到该路径。当然你担心引起问题可以选择否）？
 set str_yes=是
 set str_no=否
 set str_enter12=请输入1或2并按回车键:
-set str_clean=是否在安装前清除旧版？
-set str_installdxi=要安装DXi版吗？
+set str_clean=是否在安装前清除旧版（如果你选择了是而卡死的话，建议关闭本窗口后下次到这一步选否）？
+set str_installdxi=要安装DXi版吗（如果你选择了是而卡死的话，建议关闭本窗口后下次到这一步选否）？
 set str_intro_old_names=如果你之前用过Kontakt，也许还需要像kontakt 2.11这种形式的文件名。你确实想复制一份这种文件名的版本吗（今后可以手动去VST目录下删除不喜欢的名字）？
-set str_recommended=，推荐
+set str_recommended=，推荐选用
 set str_share_convolution=原版Kontakt 3.5不自带混响卷积，但Kontakt 2的可以提供给他用，如果你想在Kontakt 3.5中使用混响卷积，可以选择安装。但会占用约131M磁盘空间。你确定安装吗？
-set str_install64=您正在运行的系统是64位的，请根据需要选择64位Kontakt 3/4的安装细节
-set str_ovw32=使用32位的目录，但不安装Kontakt 3/4的32位版本（以64位宿主为主的用户）
-set str_64spec=指定64位的目录，和32位共存，注意不要设置到32位目录中！
-set str_no64=不安装64位的版本
-set str_pack=Kontakt已经安装完成。因部分组件没被安装（或因部分分区不是NTFS），目前正在对其进行打包以节省磁盘空间……
-set str_ask_rtas=是否安装RTAS和AAX插件？
-set str_ask_k12=是否安装Kontakt 1和2的插件版本?
-set str_convolution4=如果您不使用Kontakt 4库，可以免去安装混响卷积，这将给你的系统盘节省500M空间。确定要装Kontakt 4用的混响卷积吗？
+set str_install64=您正在运行的系统是64位的，请根据需要选择64位Kontakt的安装细节
+set str_ovw32=使用32位的目录，但不安装Kontakt 3/4/5的32位版本（以64位宿主或桥接到64位Kontakt用法为主的用户，如果担心混乱，建议选择4）
+set str_64spec=指定64位的目录，和32位共存，注意不要设置到32位目录中！该选项适合偶像很想使用32位版本的64位用户使用
+set str_no64=不安装64位的版本，本选项仅适合完全不使用64位版本的人使用
+set str_no32=指定64位的目录，不安装32位的Kontakt（SymphonicChoirs依然安装于之前指定的目录，推荐大多数人选择该项）
+set str_pack=Kontakt已经安装完成。因部分组件没被安装（或因部分分区不是NTFS），目前正在对其进行打包以节省磁盘空间，该过程无需等待结束即可使用Kontakt，但因为压缩会占用系统资源，低性能电脑也许会卡顿。可等待本窗口自动关闭后才使用。请不要删除本文件夹，因为部分文件是采用链接的方式创建到相关路径，本质上是指向本文件内的文件的。
+set str_ask_rtas=是否安装RTAS和AAX插件（不需要用的就不用装了）？
+set str_ask_k12=是否安装Kontakt 1和2的插件版本（不需要用的就不用装了，可执行版本在相应路径中，可随时运行）?
+set str_convolution4=如果您不使用Kontakt 4/5库或者基本不制作音色库，可以免去安装混响卷积，这将给你的系统盘节省500M空间。确定要装Kontakt 4用的混响卷积吗？
 set str_kore2=如果您不打算支持Kore2，可以省去为系统盘节省55M空间。确定要安装Kore2支持吗？
-set str_great_uninstall=打包删除（反安装后，安装包内所有文件打包存放以节省磁盘空间）
-set str_uhelper=Kontakt 5.x升级助手
-set str_run_updater=请运行Kontakt 5升级程序，并在其完成后按任意键继续，千万不要在安装程序上选择'Uninstall'（如果有的选话）！
+set str_great_uninstall=打包删除，在执行反安装后，安装包内所有文件打包存放以节省磁盘空间
+set str_uhelper=Kontakt 6.x升级助手，适用于你自行下载了新版的Kontakt 5，又希望新版的能集成到这个安装包中，下回重装时通过本程序直接装到最新的版本
+set str_run_updater=请运行Kontakt 6升级程序，并在其完成后按任意键继续，千万不要在安装程序上选择'Uninstall'（如果有的选话）！
 set str_update_fail=更新失败，是否重试？
 set str_update_ok=更新成功，正在把更新的文件更新到安装包中，请稍候……
 set str_must_reinstall=回收成功，请按任意键进入安装界面，以速装的方式安装一次……
 set str_greatpack=正在打包部分组件以节省空间……
 set str_isxp=说明：XP系统下，Kontakt 5.3.1是最后一个可执行的版本
+set str_generalvst64=64位VST常规路径
+set str_generalvst32=32位VST常规路径
 
 goto install
 
 :English
 
-set str_nontfs=Welcome to Native Instrument Kontakt (Code Solitaire) SEMI-HD Edition Setup (The Real HD Edition requires the volume containing the common folder to be NTFS)
-set str_install_title=Welcome to Native Instrument Kontakt HD Edition (Code Solitaire) Setup
+set str_nontfs=Welcome to Native Instrument Kontakt 2019/6/9 SEMI-HD Edition Setup (The Real HD Edition requires the volume containing the common folder to be NTFS)
+set str_install_title=Welcome to Native Instrument Kontakt HD Edition 2019/6/9 Setup
 set str_install=Install
 set str_uninstall=Uninstall
 set str_readme=Browse all tools and documents(in Chinese)
 set str_reglib=Run the Kontakt Library Register Tool
 set str_choose=Please choose from 1~
+set str_enter= and press enter key to continue
 set str_keepdfd=Keep the DFD files for Kontakt2 player?
-set str_selvstpath=Select the VST Path
+set str_selvstpath=Select the 32-bit VST Path
+set str_selvst64path=Select the 64-bit VST Path
 set str_vstpath_notfound=VST Path Not Found
 set str_vstpath_notfound64=64-bit VST Path Not Found
 set str_manualpath=Input Manually
@@ -215,23 +244,26 @@ set str_installdxi=Install the DXi Versions?
 set str_intro_old_names=If you have used kontakt before, you may need the files like kontakt 2.11. Would you still like to use the old names(You can go to the VST Directory and delete the ones you don't like in future)?
 set str_recommended=, Recommended
 set str_share_convolution=The Original Kontakt 3.5 doesn't contain convolution, but if you like, setup can copy the one from Kontakt 2 for it. This will take up about 131M disk space. Do you want to install?
-set str_install64=You can determine how the Kontakt 3/4(x64) is installed
-set str_ovw32=Install to the same location as the x86 does, which will overwrite the x86 version(for Sonar and Reaper users).
+set str_install64=You can determine how the Kontakt x64 is installed
+set str_ovw32=Install to the same location as the x86 does, which will overwrite the x86 version (Only 64-bit is available).
 set str_64spec=Install to other location, both x86 and x64 can be used for various hosts. Please don't make it inside the path to the 32-bit's!
 set str_no64=Don't want to instal the x64 version
+set str_no32=Install to other location, without installing 32-bit kontakts. The previous location will install SymphonicChoirs (Recommended)
 set str_pack=Kontakt is installed successfully. Because some components are not installed, or their junction cannot be created, setup is compressing them now.
 set str_ask_rtas=Install RTAS and AAX?
 set str_ask_k12=Install Kontakt 1 and 2?
 set str_convolution4=You don't need to install the convolution that is for the Kontakt 4 Library. You will save about 500M disk space if you decide not installing the convolution. Do you want to install it?
 set str_kore2=You don't need to install the files that is for the Kore 2. You will save about 50M disk space if you decide not installing it. Do you want to install it?
 set str_great_uninstall=Great Uninstall (Pack all files after the uninstallation to save disk space)
-set str_uhelper=Kontakt 5.x Update helper
-set str_run_updater=Press any key after the Kontakt 5 Updater is finished. DO NOT select the 'Uninstall' Option at the Updater if it shows!
+set str_uhelper=Kontakt 6.x Update helper
+set str_run_updater=Press any key after the Kontakt 6 Updater is finished. DO NOT select the 'Uninstall' Option at the Updater if it shows!
 set str_update_fail=Update failed, retry?
 set str_update_ok=Update succeeded, integrating the new files back into the setup package. Please wait.
 set str_must_reinstall=Integration succeeded, press any key to install it again as the HD Edtion.
 set str_greatpack=Packing some components to save the disk space ....
 set str_isxp=Note:The last executable Konakt 5 is v5.3.1 under Windows XP
+set str_generalvst64=Genral Path for 64-bit VST
+set str_generalvst32=Genral Path for 32-bit VST
 
 :install
 
@@ -313,6 +345,10 @@ FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\SOFTWARE\Native Instruments\
  call :fillvstpaths "%%j%" "Kontakt 5" kontakt
 )
 
+FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\SOFTWARE\Native Instruments\Kontakt Application" /v InstallVSTDir') DO (
+ call :fillvstpaths "%%j%" "Kontakt Application/6" kontakt
+)
+
 FOR %%i in (Z,Y,X,W,V,U,T,S,R,Q,P,O,N,M,L,K,J,I,H,G,F,E,D,C) do (
 	call :fillvstpaths "%%i:\Program Files\Steinberg\VstPlugins" "%str_autosearch%" vst
 )
@@ -325,9 +361,15 @@ FOR %%i in (Z,Y,X,W,V,U,T,S,R,Q,P,O,N,M,L,K,J,I,H,G,F,E,D,C) do (
 	call :fillvstpaths "%%i:\Program Files (x86)\Common Files\Steinberg\VST2" "%str_autosearch%" vst
 )
 
+FOR %%i in (Z,Y,X,W,V,U,T,S,R,Q,P,O,N,M,L,K,J,I,H,G,F,E,D,C) do (
+	call :fillvstpaths "%%i:\Program Files\Common Files\Steinberg\VST2" "%str_autosearch%" vst
+)
+
 FOR /F "%skip% tokens=2*" %%i IN ('@reg query "%lms%\Cakewalk Music Software\VSTPlugins" /v InstallDirectory') DO (
  call :fillvstpaths "%%j%" "!str_by_cakewalk!" vst
 )
+
+call :fillvstpaths "%commonx86%\Steinberg\VST2" "%str_generalvst32%" md
 
 cls
 
@@ -355,7 +397,7 @@ if not %i%==%choi% goto showvstpaths
 
 echo.
 echo.
-set /p choi=%str_choose%%idx%:
+set /p choi=%str_choose%%idx%%str_enter%:
 
 if not %choi% == 1 goto vstpath_selected
 
@@ -388,16 +430,18 @@ reg add "%lms%\VST" /v VSTPluginsPath /t reg_sz /d "%vstpath%" /f
 :setup
 
 set choi64=3
+set nok32=0
 
 if "x86"=="%PROCESSOR_ARCHITECTURE%" goto :eof
 
-call :qsel "%str_install64%" "%str_ovw32%" "%str_64spec%" "%str_no64%"
+call :qsel "%str_install64%" "%str_ovw32%" "%str_64spec%" "%str_no64%" "%str_no32%"
 
 set choi64=%choi%
 
 if %choi%==1 goto ovw32
 if %choi%==3 goto :eof
 
+if %choi%==4 set nok32=1
 set choi64=2
 
 set /a idx=0
@@ -424,9 +468,15 @@ FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\Software\Native Instruments\
  call :fillvstpaths "%%j%" "Kontakt 5" kontakt
 )
 
+FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\Software\Native Instruments\Kontakt Application" /v InstallVST64Dir') DO (
+ call :fillvstpaths "%%j%" "Kontakt Application/6" kontakt
+)
+
 FOR %%i in (Z,Y,X,W,V,U,T,S,R,Q,P,O,N,M,L,K,J,I,H,G,F,E,D,C) do (
 	call :fillvstpaths "%%i:\Program Files\VstPlugins" "%str_autosearch%" vst
 )
+
+call :fillvstpaths "%ProgramFiles%\VstPlugins" "%str_generalvst64%" md
 
 cls
 
@@ -437,7 +487,7 @@ echo %str_vstpath_notfound64%
 goto input_vstpath64
 
 :promptpaths64
-echo %str_selvstpath%
+echo %str_selvst64path%
 echo.
 
 set /a i=1
@@ -454,7 +504,7 @@ if not %i%==%choi% goto showvstpaths64
 
 echo.
 echo.
-set /p choi=%str_choose%%idx%:
+set /p choi=%str_choose%%idx%%str_enter%:
 
 if not %choi% == 1 goto vstpath_selected64
 
@@ -495,18 +545,17 @@ goto :eof
 
 if %qupdate%==yes goto retry_update
 
-set k5regroot="hklm\SOFTWARE\Native Instruments\Kontakt 5"
-set uroot=%ProgramFiles%\Native Instruments\Kontakt 5
+set kregroot="hklm\SOFTWARE\Native Instruments\Kontakt Application"
+set uroot=%ProgramFiles%\Native Instruments\Kontakt Application
 
 md "%uroot%"
 
 md "%uroot%\VST32"
 md "%uroot%\VST64"
 
-echo X>"%uroot%\VST32\Kontakt 5.dll"
-echo X>"%uroot%\VST64\Kontakt 5.dll"
+echo X>"%uroot%\VST32\Kontakt.dll"
+echo X>"%uroot%\VST64\Kontakt.dll"
 
-REM %uz% .\Documentation.7z -o"%uroot%\Documentation"
 xcopy /s /h /r /y /i "Documentation" "%uroot%\Documentation"
 
 rd ..\Kontakt5\common\presets\effects\convolution
@@ -525,6 +574,7 @@ call :jc_keepack "..\Kontakt5" "common" "%CommonProgramFiles%\Native Instruments
 call :jc_keepack "..\Kontakt5" "convolution" "%CommonProgramFiles%\Native Instruments\Kontakt 5\presets\effects" "convolution"
 call :jc_keepack "..\Kontakt5" "kore2" "%CommonProgramFiles%\Native Instruments\Shared Content\Sounds" "Kontakt 5"
 
+goto skipaax
 rd "%commonx86%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin"
 rd /q /s "%commonx86%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin"
 call :jc_keepack "..\Kontakt5" "aax32" "%commonx86%\Avid\Audio\Plug-Ins" "Kontakt 5.aaxplugin"
@@ -534,12 +584,13 @@ rd /q /s "%CommonProgramFiles%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin"
 call :jc_keepack "..\Kontakt5" "aax64" "%CommonProgramFiles%\Avid\Audio\Plug-Ins" "Kontakt 5.aaxplugin"
 %uz% ..\Kontakt5\rtas.7z -o"%commonx86%\Digidesign\DAE\Plug-Ins\."
 
-reg add %k5regroot% /v InstallRTASDir /t REG_SZ /d "%uroot%" /f
-reg add %k5regroot% /v InstallDir /t REG_SZ /d "%uroot%" /f
-reg add %k5regroot% /v InstallVSTDir /t REG_SZ /d "%uroot%\VST32" /f
-reg add %k5regroot% /v InstallVST64Dir /t REG_SZ /d "%uroot%\VST64" /f
+:skipaax
+reg add %kregroot% /v InstallRTASDir /t REG_SZ /d "%uroot%" /f
+reg add %kregroot% /v InstallDir /t REG_SZ /d "%uroot%" /f
+reg add %kregroot% /v InstallVSTDir /t REG_SZ /d "%uroot%\VST32" /f
+reg add %kregroot% /v InstallVST64Dir /t REG_SZ /d "%uroot%\VST64" /f
 
-echo f|xcopy /h /r /y "%tools%\k4u.reg" "%uroot%\Kontakt 5.exe"
+echo f|xcopy /h /r /y "%tools%\k4u.reg" "%uroot%\Kontakt.exe"
 
 :retry_update
 
@@ -551,77 +602,78 @@ pause>nul
 
 set qupdate=no
 
-if not exist "%uroot%\Kontakt 5\Kontakt 5.exe" goto old_update
+if not exist "%uroot%\Kontakt\Kontakt.exe" goto old_update
 
-xcopy /s /h /r /y /i "%uroot%\Kontakt 5" "%uroot%"
+xcopy /s /h /r /y /i "%uroot%\Kontakt" "%uroot%"
 
 :old_update
-if not exist "%uroot%\Kontakt 5.exe" goto update_fail
+if not exist "%uroot%\Kontakt.exe" goto update_fail
 
 set qupdate=yes
 
-regedit /s "%uroot%\Kontakt 5.exe"
+regedit /s "%uroot%\Kontakt.exe"
 
 FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\SOFTWARE\Native Instruments\Kontakt HD Edition" /v k4u') DO (
- set k5u_result=%%j%
+ set ka_result=%%j%
 )
 
-if "%k5u_result%"=="reg" goto update_fail
+if "%ka_result%"=="reg" goto update_fail
 
 cls
 echo %str_update_ok%
 
 if "x86"=="%PROCESSOR_ARCHITECTURE%" (set exe_dest=x86) else set exe_dest=x64
 
-echo f|xcopy /h /r /y "%uroot%\Kontakt 5.exe" "..\Kontakt5\Kontakt 5 - %exe_dest%.exe"
+echo f|xcopy /h /r /y "%uroot%\Kontakt.exe" "..\Kontakt6\Kontakt 6 - %exe_dest%.exe"
 
-del /q /f "..\Kontakt5\temp.7z"
+goto skipdpm_aax32
+del /q /f "..\Kontakt6\temp.7z"
 
-%xz% "..\Kontakt5\temp.7z" "%commonx86%\Digidesign\DAE\Plug-Ins\Kontakt 5.dpm"
+%xz% "..\Kontakt6\temp.7z" "%commonx86%\Digidesign\DAE\Plug-Ins\Kontakt 5.dpm"
 del /q /f "..\Kontakt5\rtas.7z"
 ren "..\Kontakt5\temp.7z" "rtas.7z"
 
+del /q /f "..\Kontakt6\temp.7z"
+
+%xz% "..\Kontakt6\temp.7z" "%commonx86%\Avid\Audio\Plug-Ins\Kontakt.aaxplugin\*"
+del /q /f "..\Kontakt6\aax32.7z"
+ren "..\Kontakt6\temp.7z" "aax32.7z"
+rd /q /s "..\Kontakt6\aax32"
+
+:skipdpm_aax32
+
+del /q /f "..\Kontakt6\temp.7z"
+
+%xz% "..\Kontakt6\temp.7z" "%CommonProgramFiles%\Avid\Audio\Plug-Ins\Kontakt.aaxplugin\*"
+del /q /f "..\Kontakt6\aax.7z"
+ren "..\Kontakt6\temp.7z" "aax.7z"
+rd /q /s "..\Kontakt5\aax"
+
 del /q /f "..\Kontakt5\temp.7z"
 
-%xz% "..\Kontakt5\temp.7z" "%commonx86%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin\*"
-del /q /f "..\Kontakt5\aax32.7z"
-ren "..\Kontakt5\temp.7z" "aax32.7z"
-rd /q /s "..\Kontakt5\aax32"
-
-del /q /f "..\Kontakt5\temp.7z"
-
-%xz% "..\Kontakt5\temp.7z" "%CommonProgramFiles%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin\*"
-del /q /f "..\Kontakt5\aax64.7z"
-ren "..\Kontakt5\temp.7z" "aax64.7z"
-rd /q /s "..\Kontakt5\aax64"
-
-del /q /f "..\Kontakt5\temp.7z"
-
-FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\SOFTWARE\Native Instruments\Kontakt 5" /v InstallVSTDir') DO (
- set sysvstpathbyk5=%%j%
+FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\SOFTWARE\Native Instruments\Kontakt Application" /v InstallVSTDir') DO (
+ set sysvstpathbyk6=%%j%
 )
 
-%xz% "..\Kontakt5\temp.7z" "%sysvstpathbyk5%\Kontakt 5*.*"
-del /q /f "..\Kontakt5\VST32.7z"
-ren "..\Kontakt5\temp.7z" "VST32.7z"
-rd /q /s "..\Kontakt5\VST32"
-del /q /f "%sysvstpathbyk5%\Kontakt 5*.*"
+%xz% "..\Kontakt6\temp.7z" "%sysvstpathbyk6%\Kontakt*.*"
+del /q /f "..\Kontakt6\VST32.7z"
+ren "..\Kontakt6\temp.7z" "VST32.7z"
+rd /q /s "..\Kontakt6\VST32"
+del /q /f "%sysvstpathbyk6%\Kontakt*.*"
 
-set sysvstpathbyk5=x
+set sysvstpathbyk6=x
 
-FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\SOFTWARE\Native Instruments\Kontakt 5" /v InstallVST64Dir') DO (
- set sysvstpathbyk5=%%j%
+FOR /F "%skip% tokens=2*" %%i IN ('@reg query "hklm\SOFTWARE\Native Instruments\Kontakt Application" /v InstallVST64Dir') DO (
+ set sysvstpathbyk6=%%j%
 )
 
-if "x"=="%sysvstpathbyk5%" goto update_x64_end
+if "x"=="%sysvstpathbyk6%" goto update_x64_end
 
-REM if "x86"=="%PROCESSOR_ARCHITECTURE%" goto update_x64_end
-
-%xz% "..\Kontakt5\temp.7z" "%sysvstpathbyk5%\Kontakt 5*.*"
-del /q /f "..\Kontakt5\VST64.7z"
-ren "..\Kontakt5\temp.7z" "VST64.7z"
-rd /q /s "..\Kontakt5\VST64"
-del /q /f "%sysvstpathbyk5%\Kontakt 5*.*"
+%xz% "..\Kontakt6\temp.7z" "%sysvstpathbyk6%\Kontakt*.*"
+del /q /f "..\Kontakt6\VST64.7z"
+ren "..\Kontakt6\temp.7z" "VST64.7z"
+rd /q /s "..\Kontakt6\VST64"
+del /q /f "%sysvstpathbyk6%\Kontakt*.*"
 
 :update_x64_end
 
@@ -632,10 +684,8 @@ call :recycle4 "%CommonProgramFiles%\Native Instruments" "Kontakt 5" "..\Kontakt
 del /q /f ".\temp.7z"
 rd /q /s "%uroot%\Documentation\License Agreement"
 del /q /f "%uroot%\Documentation\Readme.txt"
-REM %xz% ".\temp.7z" "%uroot%\Documentation\*"
+
 xcopy /s /h /r /y /i "%uroot%\Documentation" "Documentation"
-REM del /q /f ".\Documentation.7z"
-REM ren ".\temp.7z" "Documentation.7z"
 
 rd /q /s "%uroot%"
 
@@ -677,6 +727,8 @@ if %choi% == 2 goto end_rtas
 call :juncopy jc_aax32 "..\Kontakt5" "aax32" "%commonx86%\Avid\Audio\Plug-Ins" "Kontakt 5.aaxplugin"
 call :juncopy jc_aax64 "..\Kontakt5" "aax64" "%CommonProgramFiles%\Avid\Audio\Plug-Ins" "Kontakt 5.aaxplugin"
 
+call :juncopy jc_aax_k6 "..\Kontakt6" "aax" "%CommonProgramFiles%\Avid\Audio\Plug-Ins" "Kontakt.aaxplugin"
+
 :end_rtas
 
 call :ask_yesno "%str_ask_k12%"
@@ -706,14 +758,29 @@ if not exist "%USERPROFILE%\Local Settings\Application Data\Native Instruments\K
 
 %uz% ..\Kontakt5\default.7z -o"%USERPROFILE%\Local Settings\Application Data\Native Instruments\Kontakt 5\default"
 
+%uz% ..\Kontakt6\default.7z -o"%USERPROFILE%\Local Settings\Application Data\Native Instruments\Kontakt\default"
+
+:native_access
+md "%ProgramFiles%\Native Instruments"
+md "%ProgramFiles%\Native Instruments\Native Access"
+copy /y "%tools%\AddLibrary.exe" "%ProgramFiles%\Native Instruments\Native Access\AddLibrary.exe"
+copy /y "%tools%\NativeAccess.xml" "%ProgramFiles%\Native Instruments\Native Access\NativeAccess.xml"
+reg add "hkcu\SOFTWARE\Native Instruments\Native Access" /v AddLibraryPath /t REG_SZ /d "%ProgramFiles%\Native Instruments\Native Access\AddLibrary.exe" /f
+
+Reg Add "HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%COMMONPROGRAMFILES%\Native Instruments\Kontakt 5\Add Library.exe" /d "RUNASADMIN" /F >Nul
+Reg Add "HKEY_CURRENT_USER\Software\Native Instruments\ALSupport" /v "ExecutablePath" /d "%COMMONPROGRAMFILES%\Native Instruments\Kontakt 5\Add Library.exe" /F >Nul
+Reg Add "HKEY_CURRENT_USER\Software\Native Instruments\AddLibSupport" /v "ExecutablePath" /d "%COMMONPROGRAMFILES%\Native Instruments\Kontakt 5\Add Library.exe" /F >Nul
+
 rd ..\Kontakt4\common\presets\effects\convolution
 rd ..\Kontakt5\common\presets\effects\convolution
+rd ..\Kontakt\common\presets\effects\convolution
 
 if %localjunc%==ok goto safe_conv
 
 call :jc_unpack jc_k3common "..\Kontakt3" "common" "%commonx86%\Native Instruments" "Kontakt 3"
 call :jc_unpack jc_k45common "..\Kontakt5" "common" "%CommonProgramFiles%\Native Instruments" "Kontakt 5"
 call :jc_unpack jc_k45common "..\Kontakt5" "common" "%CommonProgramFiles%\Native Instruments" "Kontakt 4"
+call :jc_unpack jc_k45common "..\Kontakt5" "common" "%CommonProgramFiles%\Native Instruments" "Kontakt"
 
 md "%iroot%\Kontakt5\common\presets\Scripts\HD-Edition"
 xcopy /s /h /r /y /i  "%iroot%\Packages\Scripts\*.*" "%iroot%\Kontakt5\common\presets\Scripts\HD-Edition\*.*"
@@ -728,6 +795,7 @@ goto common_end
 call :juncopy jc_k3common "..\Kontakt3" "common" "%commonx86%\Native Instruments" "Kontakt 3"
 call :juncopy jc_k45common "..\Kontakt5" "common" "%CommonProgramFiles%\Native Instruments" "Kontakt 5"
 call :juncopy jc_k45common "..\Kontakt5" "common" "%CommonProgramFiles%\Native Instruments" "Kontakt 4"
+call :juncopy jc_k45common "..\Kontakt5" "common" "%CommonProgramFiles%\Native Instruments" "Kontakt"
 
 %jd% "%iroot%\Kontakt5\common\presets\Scripts\HD-Edition" "%iroot%\Packages\Scripts"
 %jd% "%iroot%\Kontakt5\common\presets\Multiscripts\HD-Edition" "%iroot%\Packages\Multiscripts"
@@ -748,6 +816,9 @@ call :pacopy jc_k4vst64 "..\Kontakt4" "VST64"
 call :juncopy jc_k5vst%k5vst32xpflag% "..\Kontakt5" "VST32%k5vst32xpflag%" "%vstpath%" "Kontakt 5"
 call :pacopy jc_k5vst64 "..\Kontakt5" "VST64"
 
+call :juncopy jc_k6vst "..\Kontakt6" "VST32" "%vstpath%" "Kontakt 6"
+call :pacopy jc_k6vst64 "..\Kontakt6" "VST64"
+
 goto vst3264_end
 
 :vst64
@@ -761,18 +832,28 @@ call :juncopy jc_k4vst64 "..\Kontakt4" "VST64" "%vst64path%" "Kontakt 4"
 call :pacopy jc_k5vst "..\Kontakt5" "VST32"
 call :juncopy jc_k5vst64 "..\Kontakt5" "VST64" "%vst64path%" "Kontakt 5"
 
+call :pacopy jc_k6vst "..\Kontakt6" "VST32"
+call :juncopy jc_k6vst64 "..\Kontakt6" "VST64" "%vst64path%" "Kontakt 6"
+
 goto vst3264_end
 
 :vst3264
 
+if %nok32%==1 goto vst64n32
+
 call :juncopy jc_k3vst "..\Kontakt3" "VST32" "%vstpath%" "Kontakt 3.5"
-call :juncopy jc_k3vst64 "..\Kontakt3" "VST64" "%vst64path%" "Kontakt 3.5"
-
 call :juncopy jc_k4vst "..\Kontakt4" "VST32" "%vstpath%" "Kontakt 4"
-call :juncopy jc_k4vst64 "..\Kontakt4" "VST64" "%vst64path%" "Kontakt 4"
-
 call :juncopy jc_k5vst%k5vst32xpflag% "..\Kontakt5" "VST32%k5vst32xpflag%" "%vstpath%" "Kontakt 5"
+
+call :juncopy jc_k6vst "..\Kontakt6" "VST32" "%vstpath%" "Kontakt 6"
+
+:vst64n32
+
+call :juncopy jc_k3vst64 "..\Kontakt3" "VST64" "%vst64path%" "Kontakt 3.5"
+call :juncopy jc_k4vst64 "..\Kontakt4" "VST64" "%vst64path%" "Kontakt 4"
 call :juncopy jc_k5vst64 "..\Kontakt5" "VST64" "%vst64path%" "Kontakt 5"
+
+call :juncopy jc_k6vst64 "..\Kontakt6" "VST64" "%vst64path%" "Kontakt 6"
 
 :vst3264_end
 
@@ -821,12 +902,15 @@ if %choi% == 2 goto end_conv4
 call :juncopy jc_k45conv "..\Kontakt5" "convolution" "%CommonProgramFiles%\Native Instruments\Kontakt 5\presets\effects" "convolution"
 call :juncopy jc_k45conv "..\Kontakt5" "convolution" "%CommonProgramFiles%\Native Instruments\Kontakt 4\presets\effects" "convolution"
 
-cd /d "%CommonProgramFiles%\Native Instruments\Kontakt 5\presets\effects\convolution"
+call :juncopy jc_k45conv "..\Kontakt5" "convolution" "%CommonProgramFiles%\Native Instruments\Kontakt\presets\effects" "convolution"
 
+cd /d "%CommonProgramFiles%\Native Instruments\Kontakt 5\presets\effects\convolution"
 call :cnvtchall
 
 cd /d "%CommonProgramFiles%\Native Instruments\Kontakt 4\presets\effects\convolution"
+call :cnvtchall
 
+cd /d "%CommonProgramFiles%\Native Instruments\Kontakt\presets\effects\convolution"
 call :cnvtchall
 
 goto end_conv4
@@ -872,6 +956,7 @@ call :juncopy jc_kore "..\Kontakt5" "kore5" "%CommonProgramFiles%\Native Instrum
 
 md "%CommonProgramFiles%\Native Instruments\Service Center"
 echo f|xcopy /h /r /y "%tools%\Kontakt 5.xml" "%CommonProgramFiles%\Native Instruments\Service Center\Kontakt 5.xml"
+echo f|xcopy /h /r /y "%tools%\ProductHints.xml" "%CommonProgramFiles%\Native Instruments\Service Center\ProductHints.xml"
 
 regedit /s "%tools%\Kontakt.reg"
 regedit /s "%tools%\sc.reg"
@@ -899,6 +984,11 @@ reg add "hklm\Software\Native Instruments\Kontakt 5" /v InstallRTASDir /t REG_SZ
 reg add "hklm\Software\Native Instruments\Kontakt 5" /v InstallDir /t REG_SZ /d "%iroot%\kontakt5" /f
 reg add "hklm\Software\Native Instruments\Kontakt 5" /v InstallVSTDir /t REG_SZ /d "%vstpath%\Kontakt 5" /f
 
+reg add "hklm\Software\Native Instruments\Kontakt Application" /v InstallAAX64Dir /t REG_SZ /d "%CommonProgramFiles%\Avid\Audio\Plug-Ins" /f
+reg add "hklm\Software\Native Instruments\Kontakt Application" /v InstallDir /t REG_SZ /d "%iroot%\kontakt6" /f
+reg add "hklm\Software\Native Instruments\Kontakt Application" /v InstallVSTDir /t REG_SZ /d "%vstpath%\Kontakt 6" /f
+
+
 reg add "%lms%\East West\WordBuilder" /v Serial /t reg_sz /d "WBAMA-EF162-MFXD8-B553P-33UIF" /f
 reg add "%lms%\East West\WordBuilder" /v Location /t reg_sz /d "%iroot%\SymphonicChoirs\WordBuilder\\" /f
 
@@ -925,6 +1015,8 @@ reg add "hklm\Software\Native Instruments\Kontakt 4" /v InstallVST64Dir /t REG_S
 
 reg add "hklm\Software\Native Instruments\Kontakt 5" /v InstallVST64Dir /t REG_SZ /d "%vst64path%\Kontakt 5" /f
 
+reg add "hklm\Software\Native Instruments\Kontakt Application" /v InstallVST64Dir /t REG_SZ /d "%vst64path%\Kontakt 6" /f
+
 :askdxi
 
 REM call :ask_yesno "%str_installdxi%"
@@ -943,12 +1035,17 @@ FOR %%i in (..\kontakt2\*.dll) do regsvr32 %iu% "%%i"
 
 if "x86"=="%PROCESSOR_ARCHITECTURE%" goto registerx86
 
-start "vc64" "%tools%\vcredist_x64.exe" /quiet /norestart
+start "vc64" "%tools%\vcredist_x64_2013-12.0.30501.exe" /quiet /norestart
+start "vc64" "%tools%\vcredist_x64_2015-14.0.23026.exe" /quiet /norestart
+start "vc64" "%tools%\vcredist_x64_2017-14.10.25017.exe" /quiet /norestart
 
 :registerx86
-start "vc86" "%tools%\vcredist_x86.exe" /quiet /norestart
+start "vc86" "%tools%\vcredist_x86_2013-12.0.30501.exe" /quiet /norestart
+start "vc86" "%tools%\vcredist_x86_2015-14.0.23026.exe" /quiet /norestart
+start "vc86" "%tools%\vcredist_x86_2017-14.10.25017.exe" /quiet /norestart
 start "kg" "%tools%\Kontakt 2.0.2 Keygen.exe"
 start "scrt" "%tools%\scrt.exe"
+start "kkg" "%tools%\Kontakt_Keygen.exe"
 
 if %k12_needed%==false goto registerx86_end
 
@@ -960,13 +1057,17 @@ start "reg2.x" "%tools%\Registration Tool.exe"
 call :exit true false
 
 :readme
-start https://github.com/eviluess/kontakt_hd/wiki/Native-Instruments-Kontakt-with-SymphonicChoirs-HD-Edition-for-Windows
 start explorer "%tools%\."
-start notepad "%tools%\readme.txt"
 call :exit false false
 
 :regtool
+
 start "kg" "%tools%\Kontakt 2.0.2 Keygen.exe"
+start "scrt" "%tools%\scrt.exe"
+start "kkg" "%tools%\Kontakt_Keygen.exe"
+start "reg1.53" "%tools%\KontaktRegistrationTool.exe"
+start "reg2.x" "%tools%\Registration Tool.exe"
+
 call :exit false false
 
 :uninstall
@@ -1008,6 +1109,9 @@ rd /q /s "%vstpath%\Kontakt 4"
 rd "%vstpath%\Kontakt 5"
 rd /q /s "%vstpath%\Kontakt 5"
 
+rd "%vstpath%\Kontakt 6"
+rd /q /s "%vstpath%\Kontakt 6"
+
 rd "%vstpath%\Kontakt ON"
 rd /q /s "%vstpath%\Kontakt ON"
 
@@ -1031,6 +1135,9 @@ rd /q /s "%vst64path%\Kontakt 4"
 
 rd "%vst64path%\Kontakt 5"
 rd /q /s "%vst64path%\Kontakt 5"
+
+rd "%vst64path%\Kontakt 6"
+rd /q /s "%vst64path%\Kontakt 6"
 
 :undxi
 
@@ -1056,9 +1163,11 @@ reg delete "%lms%\Native Instruments\Kontakt3" /f
 
 rd /q /s "%USERPROFILE%\Local Settings\Application Data\Native Instruments\Kontakt 4"
 rd /q /s "%USERPROFILE%\Local Settings\Application Data\Native Instruments\Kontakt 5"
+rd /q /s "%USERPROFILE%\Local Settings\Application Data\Native Instruments\Kontakt"
 
 rd ..\Kontakt4\common\presets\effects\convolution
 rd ..\Kontakt5\common\presets\effects\convolution
+rd ..\Kontakt\common\presets\effects\convolution
 
 rd ..\Kontakt5\common\presets\Scripts\HD-Edition
 xcopy /s /h /r /y /i ..\Kontakt5\common\presets\Scripts\HD-Edition\*.* ..\Packages\Scripts\*.*
@@ -1075,6 +1184,9 @@ rd /q /s "%CommonProgramFiles%\Native Instruments\Kontakt 4"
 rd "%CommonProgramFiles%\Native Instruments\Kontakt 5"
 rd /q /s "%CommonProgramFiles%\Native Instruments\Kontakt 5"
 
+rd "%CommonProgramFiles%\Native Instruments\Kontakt"
+rd /q /s "%CommonProgramFiles%\Native Instruments\Kontakt"
+
 del /q /f "%commonx86%\Digidesign\DAE\Plug-Ins\Kontakt 4.dpm"
 del /q /f "%commonx86%\Digidesign\DAE\Plug-Ins\Kontakt 5.dpm"
 
@@ -1085,6 +1197,7 @@ rd /q /s "%commonx86%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin"
 rd "%CommonProgramFiles%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin"
 rd /q /s "%CommonProgramFiles%\Avid\Audio\Plug-Ins\Kontakt 5.aaxplugin"
 
+rd /q /s "%CommonProgramFiles%\Avid\Audio\Plug-Ins\Kontakt.aaxplugin"
 
 rd /q /s "..\Kontakt2\KConvert Logs"
 rd /q /s "..\Kontakt2\KConvert Temp"
@@ -1099,11 +1212,19 @@ reg delete "hklm\SOFTWARE\Native Instruments\Kontakt 4" /f
 reg delete "hkcu\SOFTWARE\Native Instruments\Kontakt 5" /f
 reg delete "hklm\SOFTWARE\Native Instruments\Kontakt 5" /f
 
+reg delete "hklm\SOFTWARE\Native Instruments\Kontakt Application" /f
+
 reg delete "%lms%\East West\WordBuilder" /f
 reg delete "%lms%\Cakewalk Music Software\MIDI Filters\{CBFF562F-0D67-4B5D-B0E0-9E92A71049FE}" /f
 
 reg delete "hklm\Software\East West\WordBuilder" /f
 reg delete "hklm\Software\Cakewalk Music Software\MIDI Filters\{CBFF562F-0D67-4B5D-B0E0-9E92A71049FE}" /f
+
+reg delete "hkcu\SOFTWARE\Native Instruments\Native Access" /f
+rd /q /s "%ProgramFiles%\Native Instruments\Native Access"
+
+Reg Delete "HKEY_CURRENT_USER\Software\Native Instruments\ALSupport" /f
+Reg Delete "HKEY_CURRENT_USER\Software\Native Instruments\AddLibSupport" /f
 
 rd "%CommonProgramFiles%\Native Instruments\Shared Content\Sounds\Kontakt 4"
 rd "%CommonProgramFiles%\Native Instruments\Shared Content\Sounds"
@@ -1134,6 +1255,10 @@ del /q /f "%sys32%\NI_IRC_1_0_3.dll"
 del /q /f "%sys32%\NI_IRC_1_1.dll"
 del /q /f "%sys32%\NI_IRC_1_2.dll"
 del /q /f "%sys32%\REX Shared Library.dll"
+del /q /f "%sys32%\REX Shared Library 64.dll"
+del /q /f "%sys32%\NIHelperUAC.dll"
+del /q /f "%sys32%\REX64.dll"
+del /q /f "%sys32%\REXServerCOM.exe"
 
 :uninstall_continue
 
@@ -1154,6 +1279,8 @@ call :pacopy . "..\Kontakt5" "VST32XP"
 call :pacopy . "..\Kontakt5" "VST64"
 call :pacopy . "..\Kontakt5" "convolution" 
 call :pacopy . "..\Kontakt5" "kore2" 
+call :pacopy . "..\Kontakt6" "VST32"
+call :pacopy . "..\Kontakt6" "VST64"
 
 call :exit false true
 
@@ -1269,7 +1396,7 @@ goto qsel_loop
 
 echo.
 echo.
-set /p choi=%str_choose%%qidx%:
+set /p choi=%str_choose%%qidx%%str_enter%:
 
 goto :eof
 
@@ -1321,6 +1448,7 @@ call :delaypack jc_k45conv "..\Kontakt5" "convolution"
 call :delaypack jc_kore "..\Kontakt5" "kore2"
 call :delaypack jc_aax32 "..\Kontakt5" "aax32"
 call :delaypack jc_aax64 "..\Kontakt5" "aax64"
+call :delaypack jc_aax_k6 "..\Kontakt6" "aax"
 
 :exit_no_pack
 
